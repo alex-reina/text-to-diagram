@@ -17,12 +17,30 @@ except ImportError:  # pragma: no cover - optional dependency
     ChatGroq = None  # type: ignore[misc,assignment]
     SystemMessage = None  # type: ignore[misc,assignment]
 
+# Curated from Groq's current catalog; keep conversational models first so the
+# default remains sensible even if the list grows.
+GROQ_TEXT_MODELS: tuple[str, ...] = (
+    "llama-3.1-8b-instant",
+    "groq/compound-mini",
+    "groq/compound",
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "moonshotai/kimi-k2-instruct",
+    "moonshotai/kimi-k2-instruct-0905",
+    "qwen/qwen3-32b",
+    "allam-2-7b",
+)
+DEFAULT_GROQ_MODEL: str = GROQ_TEXT_MODELS[0]
+
 
 @dataclass
 class GroqConfig:
     """Configuration for the Groq chat model."""
 
-    model: str = "gemma2-9b-it"
+    model: str = DEFAULT_GROQ_MODEL
     temperature: float = 0.2
     max_tokens: Optional[int] = None
     timeout: Optional[float] = None
@@ -153,6 +171,8 @@ class GroqConversationAgent:
 
     def _build_prompt(self) -> list[BaseMessage]:
         history = self.memory.as_langchain()
+        # We merge the persona instructions with any dynamic formatting guidance
+        # before passing them as a single system message.
         system_text = self.system_prompt
         if self.output_instructions:
             system_text = f"{system_text}\n\nOutput requirements:\n{self.output_instructions}"
@@ -169,6 +189,8 @@ class GroqConversationAgent:
         if not user_input:
             raise ValueError("user_input must not be empty")
 
+        # Persist the turn so the LangChain client sees the full dialogue and
+        # our local history stays consistent with the response.
         self.memory.add_user_message(user_input)
         prompt = self._build_prompt()
         response = self.client.invoke(prompt)

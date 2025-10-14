@@ -13,6 +13,8 @@ from ai_agent import (
     PlantUMLRenderingError,
     render_plantuml_from_text,
     save_diagrams,
+    DEFAULT_GROQ_MODEL,
+    GROQ_TEXT_MODELS,
 )
 from chatkey import ensure_api_key
 
@@ -23,8 +25,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        default="gemma2-9b-it",
-        help="Groq chat model to use.",
+        default=DEFAULT_GROQ_MODEL,
+        help=f"Groq chat model to use (common choices: {', '.join(GROQ_TEXT_MODELS)}).",
     )
     parser.add_argument(
         "--temperature",
@@ -128,6 +130,7 @@ def chat_loop(agent: GroqConversationAgent, *, diagram_dir: Path, diagram_format
             print("\nSession ended.")
             break
         command = user_input.strip()
+        # Interpret lightweight slash commands before sending text to the model.
         if command.lower() in {"/exit", "exit", "quit"}:
             print("Goodbye!")
             break
@@ -169,6 +172,7 @@ def chat_loop(agent: GroqConversationAgent, *, diagram_dir: Path, diagram_format
             diagrams = []
 
         for diagram in diagrams:
+            # Surface links immediately so CLI users can open results without waiting for saves.
             if diagram.image_url:
                 print(f"Diagram image URL: {diagram.image_url}")
                 transcript.append(f"diagram_image_url: {diagram.image_url}")

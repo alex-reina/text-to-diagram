@@ -42,6 +42,7 @@ _DEFAULT_SVG_ENDPOINT = "https://www.plantuml.com/plantuml/svg/"
 def extract_plantuml_blocks(text: str) -> List[str]:
     """Return PlantUML snippets found within the text."""
 
+    # The pattern captures each bounded @startuml…@enduml block including newlines.
     return [match.group(1).strip() for match in _PLANTUML_PATTERN.finditer(text)]
 
 
@@ -60,6 +61,7 @@ def _create_client(fmt: str) -> PlantUML:
         raise ImportError(
             "The 'plantuml' package is required to render diagrams. Install it via pip."
         )
+    # LangChain's PlantUML client speaks HTTP; we only swap the base URL by format.
     endpoint = _resolve_endpoint(fmt)
     return PlantUML(url=endpoint)
 
@@ -95,6 +97,7 @@ def _build_diagram_urls(client: PlantUML, fmt: str, code: str) -> tuple[str | No
         try:
             from urllib.parse import urlparse, urlunparse
 
+            # PlantUML encodes the same diagram in different paths for image/editor views.
             parsed = urlparse(image_url)
             path = parsed.path
             if "/png/" in path:
@@ -129,6 +132,7 @@ def render_plantuml_from_text(text: str, fmt: str = "png") -> List[PlantUMLDiagr
             diagrams.append(render_plantuml(block, fmt=fmt))
         except PlantUMLRenderingError:
             raise
+        # Allow other exceptions (e.g., network) to bubble so callers can decide whether to continue.
     return diagrams
 
 
@@ -143,6 +147,7 @@ def save_diagrams(diagrams: Iterable[PlantUMLDiagram], directory: Path) -> List[
         path = directory / filename
         path.write_bytes(diagram.data)
         saved_paths.append(path)
+    # Return order matches the input iterator so callers can zip results deterministically.
     return saved_paths
 
 

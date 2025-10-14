@@ -27,6 +27,7 @@ class ConversationMemory:
     def add(self, role: str, content: str) -> None:
         message = Message(role=role, content=content.strip())
         self._messages.append(message)
+        # Enforce the retention policy immediately so every mutation stays within bounds.
         self._trim()
 
     def add_user_message(self, content: str) -> None:
@@ -49,6 +50,7 @@ class ConversationMemory:
             return
         overflow = len(self._messages) - self.max_messages
         if overflow > 0:
+            # Drop the oldest turns, preserving chronological order for the remainder.
             del self._messages[0:overflow]
 
     def as_langchain(self) -> List[object]:

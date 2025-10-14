@@ -21,6 +21,7 @@ def _candidate_paths(base_dir: Path | None = None) -> Iterable[Path]:
     for name in _DEFAULT_FILENAMES:
         candidate = base / name
         if candidate.exists():
+            # Only load the first available file to avoid surprises with overriding order.
             yield candidate
 
 
@@ -72,6 +73,7 @@ def save_key(key: str, path: Path | str | None = None) -> None:
         filtered = [line for line in lines if not line.startswith(f"{_ENV_KEY}=")]
     else:
         filtered = []
+    # Keep the most recent key while preserving unrelated dotenv content.
     filtered.append(f"{_ENV_KEY}={key}")
     target.write_text("\n".join(filtered) + "\n", encoding="utf-8")
 
@@ -84,6 +86,7 @@ def ensure_api_key(path: Path | str | None = None) -> str:
     if key:
         return key
 
+    # Fall back to an interactive prompt so CLI and Streamlit share the same flow.
     key = prompt_for_key()
     if not key:
         raise RuntimeError("GROQ API key is required.")

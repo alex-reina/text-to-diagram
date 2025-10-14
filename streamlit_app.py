@@ -9,13 +9,15 @@ import streamlit as st
 
 from ai_agent import (
     ConversationMemory,
+    DEFAULT_GROQ_MODEL,
+    GROQ_TEXT_MODELS,
     GroqConfig,
     GroqConversationAgent,
     PlantUMLRenderingError,
     PlantUMLDiagram,
     render_plantuml_from_text,
 )
-from chatkey import ensure_api_key
+from chatkey import get_groq_api_key, save_key
 
 
 def build_agent(
@@ -45,6 +47,7 @@ def build_agent(
 def agent_from_state(settings: dict[str, object]) -> GroqConversationAgent:
     key = tuple(settings.items())
     if st.session_state.get("agent_key") != key:
+        # Rebuild the agent whenever the configuration changes, keeping previous chats otherwise.
         st.session_state.agent = build_agent(
             model=settings["model"],
             temperature=settings["temperature"],
@@ -88,8 +91,41 @@ def display_history(agent: GroqConversationAgent) -> None:
                     diagram = record.get("diagram")
                     if diagram is None:
                         continue
+                    # Skip reprinting the PlantUML if it already appears in the assistant message.
                     show_code = diagram.code not in content
                     display_diagram(diagram, show_code=show_code)
+
+def require_groq_api_key() -> None:
+    """Ensure a Groq API key is available, prompting via the UI when absent."""
+
+    if st.session_state.get("groq_key_loaded"):
+        return
+
+    existing = get_groq_api_key(required=False)
+    if existing:
+        st.session_state.groq_key_loaded = True
+        return
+
+    # Stop rendering the rest of the UI until the user provides credentials.
+    st.info("Add your Groq API key to start chatting.")
+    with st.form("groq-api-key-form", clear_on_submit=True):
+        key_input = st.text_input(
+            "GROQ_API_KEY",
+            type="password",
+            help="Create a key at https://console.groq.com/keys and paste it here.",
+        )
+        submitted = st.form_submit_button("Save key")
+
+    if submitted:
+        if key_input:
+            save_key(key_input)
+            os.environ["GROQ_API_KEY"] = key_input.strip()
+            st.session_state.groq_key_loaded = True
+            st.rerun()
+        else:
+            st.error("API key cannot be empty.")
+
+    st.stop()
 
 
 def main() -> None:
@@ -97,18 +133,14 @@ def main() -> None:
     st.title("My Diagram Agent")
     st.caption("Chat with a Groq model that remembers context and crafts PlantUML output.")
 
-    if "groq_key_loaded" not in st.session_state:
-        key = ensure_api_key()
-        if not key:
-            st.stop()
-        st.session_state.groq_key_loaded = True
+    require_groq_api_key()
 
     with st.sidebar:
         st.header("Session Settings")
         model = st.selectbox(
             "Groq model",
-            options=["gemma2-9b-it", "mixtral-8x7b-32768", "llama3-70b-8192"],
-            index=0,
+            options=list(GROQ_TEXT_MODELS),
+            index=list(GROQ_TEXT_MODELS).index(DEFAULT_GROQ_MODEL),
         )
         temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=0.2, step=0.05)
         max_tokens = st.number_input(
