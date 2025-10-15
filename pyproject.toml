@@ -1,7 +1,7 @@
 [project]
 name = "text-to-diagram"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.3.0"
+description = "Turn natural-language diagram ideas into PlantUML using a Groq-powered Python agent."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,3 +17,23 @@ dependencies = [
     "streamlit>=1.50.0",
     "youtube-search>=2.1.2",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-mock>=3.14.0",
+]
+
+[project.scripts]
+text-to-diagram-chat = "chatbot:main"
+text-to-diagram-ui = "ai_agent.streamlit_launcher:main"
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["chatbot", "chatkey", "main"]
+
+[tool.setuptools.packages.find]
+include = ["ai_agent", "ai_agent.*"]

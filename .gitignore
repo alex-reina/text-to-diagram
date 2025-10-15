@@ -1,6 +1,26 @@
-__pycache__/
-.pycache/
-*.pyc
-.env*
-.venv/
+# Default ignore everything
+*
+
+# Allow tracked project files and directories
+!.gitignore
+!README.md
+!CHANGELOG.md
+!pyproject.toml
+!requirements.txt
+!chatkey.py
+!chatbot.py
+!main.py
+!streamlit_app.py
+!ai_agent/
+!ai_agent/**
+!include/
+!include/**
+!tests/
+!tests/**
+!.github/
+!.github/**
+
+# Re-ignore generated artifacts
+**/__pycache__/
+*.py[cod]
 .DS_Store

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Sequence
 
 from ai_agent import (
     ConversationMemory,
@@ -19,7 +20,7 @@ from ai_agent import (
 from chatkey import ensure_api_key
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with a Groq model that remembers recent context.",
     )
@@ -92,7 +93,7 @@ def parse_args() -> argparse.Namespace:
         default="png",
         help="Image format to request from the PlantUML server.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def build_agent(args: argparse.Namespace) -> GroqConversationAgent:
@@ -199,29 +200,30 @@ def save_transcript(path: Path, transcript: list[str]) -> None:
     print(f"Transcript written to {path}")
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: Sequence[str] | None = None) -> int:
+    try:
+        args = parse_args(argv)
+    except SystemExit:
+        # argparse already printed help/error
+        return 2
+
     try:
         ensure_api_key()
         agent = build_agent(args)
     except ImportError as exc:
-        print(
-            "Missing dependency:",
-            exc,
-            "\nInstall langchain-core and langchain-groq to chat with Groq.",
-        )
+        print(f"Error: {exc}", file=sys.stderr)
         return 1
     except RuntimeError as exc:
-        print(exc)
+        print(exc, file=sys.stderr)
         return 1
 
-    transcript = chat_loop(
-        agent,
-        diagram_dir=args.diagram_dir,
-        diagram_format=args.diagram_format,
-    )
+    transcript = chat_loop(agent, diagram_dir=args.diagram_dir, diagram_format=args.diagram_format)
     if args.transcript:
-        save_transcript(args.transcript, transcript)
+        try:
+            save_transcript(args.transcript, transcript)
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to write transcript: {exc}", file=sys.stderr)
+            return 1
     return 0
 
 

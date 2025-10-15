@@ -14,6 +14,8 @@ A playground for turning natural-language diagram ideas into PlantUML using a li
 **Run it**
 ```bash
 python3 chatbot.py
+# or with the packaged console script
+text-to-diagram-chat
 ```
 Commands inside the chat:
 - `/exit` – leave the session.
@@ -30,10 +32,20 @@ The default Groq model is `llama-3.1-8b-instant`. Other tested chat-capable opti
 Prefer a richer UI? Launch the Streamlit app:
 ```bash
 streamlit run streamlit_app.py
+# or via the console script wrapper
+text-to-diagram-ui
 ```
 Use the sidebar to tune the model, temperature, memory window, system instructions, output format, and diagram output type (PNG/SVG) without leaving the browser. On first launch the app requests your Groq API key and saves it to `.env`. When the assistant includes PlantUML in its reply, the app displays the raw UML alongside the rendered image plus quick links to view the image or open the encoded UML in PlantUML's online editor. Conversation history is displayed with `st.chat_message`.
 
 The model picker surfaces the same set of chat-focused Groq models listed above.
+
+## Development
+
+Install dev dependencies and run the test suite:
+```bash
+python -m pip install -e .[dev]
+pytest
+```
 
 
 ## Getting an API Key
