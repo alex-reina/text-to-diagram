@@ -18,6 +18,7 @@ def test_main_runs_chat_loop_and_writes_transcript(tmp_path, monkeypatch):
         lambda options: build_agent_calls.append(options) or object(),
     )
     monkeypatch.setattr("chatbot.chat_loop", lambda *a, **k: ["user: hi", "assistant: hello"])
+    monkeypatch.setattr("chatbot.ensure_api_key", lambda: None)
 
     written = {}
 
